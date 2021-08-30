@@ -61,7 +61,8 @@ class DDSGenerator:
             else:  # with 50% chance absorb
                 x_new = x_max
 
-                # if reflection goes past x_min then value should be x_max for same reasons as above
+                # if reflection goes past x_min then value should be x_max for
+                # same reasons as above
             if x_new < x_min:
                 x_new = x_max
 
@@ -112,13 +113,15 @@ class DDSGenerator:
             else:  # with 50% chance absorb
                 s_new = s_max
 
-                # if reflection goes past (s_min-0.5) then value should be s_max for same reasons as above
+                # if reflection goes past (s_min-0.5) then value should be
+                # s_max for same reasons as above
             if s_new < s_min - 0.5:
                 s_new = s_max
 
         s_new = np.round(s_new)  # New value must be integer
         if s_new == s:  # pick a number between s_max and s_min by a Uniform distribution
-            sample = s_min - 1 + np.ceil((s_max - s_min) * self.np_random.rand())
+            sample = s_min - 1 + \
+                np.ceil((s_max - s_min) * self.np_random.rand())
             if sample < s:
                 s_new = sample
             else:  # must increment option number by one
@@ -273,47 +276,64 @@ class dds(_algorithm):
         self.set_repetiton(repetitions)
         self.min_bound, self.max_bound = self.parameter(
         )['minbound'], self.parameter()['maxbound']
-        print('Starting the DDS algotrithm with '+str(repetitions)+ ' repetitions...')
+        print(
+            'Starting the DDS algotrithm with ' +
+            str(repetitions) +
+            ' repetitions...')
 
-        number_of_parameters = self.status.parameters  # number_of_parameters is the amount of parameters
+        # number_of_parameters is the amount of parameters
+        number_of_parameters = self.status.parameters
 
         if len(x_initial) == 0:
-            initial_iterations = np.int(np.max([5, round(0.005 * repetitions)]))
+            initial_iterations = np.int(
+                np.max([5, round(0.005 * repetitions)]))
         elif len(x_initial) != number_of_parameters:
-            raise ValueError("User specified 'x_initial' has not the same length as available parameters")
+            raise ValueError(
+                "User specified 'x_initial' has not the same length as available parameters")
         else:
             initial_iterations = 1
             x_initial = np.array(x_initial)
             if not (np.all(x_initial <= self.max_bound) and np.all(
                     x_initial >= self.min_bound)):
-                raise ValueError("User specified 'x_initial' but the values are not within the parameter range")
+                raise ValueError(
+                    "User specified 'x_initial' but the values are not within the parameter range")
 
-        # Users can define trial runs in within "repetition" times the algorithm will be executed
+        # Users can define trial runs in within "repetition" times the
+        # algorithm will be executed
         for trial in range(trials):
             #objectivefunction_max = -1e308
             params_max = x_initial
-            # repitionno_best saves on which iteration the best parameter configuration has been found
-            repitionno_best = initial_iterations  # needed to initialize variable and avoid code failure when small # iterations
+            # repitionno_best saves on which iteration the best parameter
+            # configuration has been found
+            # needed to initialize variable and avoid code failure when small #
+            # iterations
+            repitionno_best = initial_iterations
             params_max, repetions_left, objectivefunction_max = self.calc_initial_para_configuration(initial_iterations, trial,
-                                                                                    repetitions, x_initial)
+                                                                                                     repetitions, x_initial)
             params_max = self.fix_status_params_format(params_max)
-            trial_best_value = list(params_max)#self.status.params_max.copy()
-            
+            # self.status.params_max.copy()
+            trial_best_value = list(params_max)
+
             # important to set this field `generator_repetitions` so that
             # method `get_next_s_test` can generate exact parameters
             self.generator_repetitions = repetions_left
             self.params_max = params_max
-            for rep, x_curr, simulations in self.repeat(self.get_next_x_curr()):
+            for rep, x_curr, simulations in self.repeat(
+                    self.get_next_x_curr()):
 
-                like = self.postprocessing(rep, x_curr, simulations, chains=trial)
+                like = self.postprocessing(
+                    rep, x_curr, simulations, chains=trial)
                 if like > objectivefunction_max:
                     objectivefunction_max = like
                     self.params_max = list(x_curr)
-                    self.params_max = self.fix_status_params_format(self.params_max)
+                    self.params_max = self.fix_status_params_format(
+                        self.params_max)
 
             print('Best solution found has obj function value of ' + str(objectivefunction_max) + ' at '
                   + str(repitionno_best) + '\n\n')
-            debug_results.append({"sbest": self.params_max, "trial_initial": trial_best_value,"objfunc_val": objectivefunction_max})
+            debug_results.append({"sbest": self.params_max,
+                                  "trial_initial": trial_best_value,
+                                  "objfunc_val": objectivefunction_max})
         self.final_call()
         return debug_results
 
@@ -322,7 +342,8 @@ class dds(_algorithm):
         start_params.set_by_array([j for j in params_max])
         return start_params
 
-    def calc_initial_para_configuration(self, initial_iterations, trial, repetitions, x_initial):
+    def calc_initial_para_configuration(
+            self, initial_iterations, trial, repetitions, x_initial):
         #max_bound, min_bound = self.status.params_max.maxbound, self.status.params_max.minbound
         parameter_bound_range = self.max_bound - self.min_bound
         number_of_parameters = len(parameter_bound_range)
@@ -332,13 +353,16 @@ class dds(_algorithm):
         # Calculate the initial Solution, if `initial_iterations` > 1 otherwise the user defined a own one.
         # If we need to find an initial solution we iterating initial_iterations times to warm um the algorithm
         # by trying which randomized generated input matches best
-        # initial_iterations is the number of function evaluations to initialize the DDS algorithm solution
+        # initial_iterations is the number of function evaluations to
+        # initialize the DDS algorithm solution
         if initial_iterations > 1:
             print('Finding best starting point for trial ' + str(trial + 1) + ' using ' + str(
                 initial_iterations) + ' random samples.')
-            repetions_left = repetitions - initial_iterations  # use this to reduce number of fevals in DDS loop
+            # use this to reduce number of fevals in DDS loop
+            repetions_left = repetitions - initial_iterations
             if repetions_left <= 0:
-                raise ValueError('# Initialization samples >= Max # function evaluations.')
+                raise ValueError(
+                    '# Initialization samples >= Max # function evaluations.')
 
             starting_generator = (
                 (rep, [self.np_random.randint(np.int(self.min_bound[j]), np.int(self.max_bound[j]) + 1) if
@@ -347,21 +371,23 @@ class dds(_algorithm):
                        range(number_of_parameters)]) for rep in range(int(initial_iterations)))
 
             for rep, x_curr, simulations in self.repeat(starting_generator):
-                like = self.postprocessing(rep, x_curr, simulations)  # get obj function value
+                like = self.postprocessing(
+                    rep, x_curr, simulations)  # get obj function value
                 # status setting update
                 if like > objectivefunction_max:
                     objectivefunction_max = like
-                    params_max = list(x_curr)         
+                    params_max = list(x_curr)
                     params_max = self.fix_status_params_format(params_max)
 
         else:  # now initial_iterations=1, using a user supplied initial solution.  Calculate obj func value.
             repetions_left = repetitions - 1  # use this to reduce number of fevals in DDS loop
-            rep, x_test_param, simulations = self.simulate((0, x_initial))  # get from the inputs
+            rep, x_test_param, simulations = self.simulate(
+                (0, x_initial))  # get from the inputs
             like = self.postprocessing(rep, x_test_param, simulations)
             if like > objectivefunction_max:
-                    objectivefunction_max = like
-                    params_max = list(x_test_param)
-                    params_max = self.fix_status_params_format(params_max)
+                objectivefunction_max = like
+                params_max = list(x_test_param)
+                params_max = self.fix_status_params_format(params_max)
         return params_max, repetions_left, objectivefunction_max
 
     def calculate_next_s_test(self, previous_x_curr, rep, rep_limit, r):
@@ -383,22 +409,29 @@ class dds(_algorithm):
         :return: next parameter set
         """
         amount_params = len(previous_x_curr)
-        new_x_curr = previous_x_curr.copy()  # define new_x_curr initially as current (previous_x_curr for greedy)
+        # define new_x_curr initially as current (previous_x_curr for greedy)
+        new_x_curr = previous_x_curr.copy()
 
         randompar = self.np_random.rand(amount_params)
         probability_neighborhood = 1.0 - np.log(rep + 1) / np.log(rep_limit)
         dvn_count = 0  # counter for how many decision variables vary in neighbour
 
         for j in range(amount_params):
-            if randompar[j] < probability_neighborhood:  # then j th DV selected to vary in neighbour
+            # then j th DV selected to vary in neighbour
+            if randompar[j] < probability_neighborhood:
                 dvn_count = dvn_count + 1
-                new_value = self.dds_generator.neigh_value_mixed(previous_x_curr, r, j, self.min_bound[j],self.max_bound[j])
-                new_x_curr[j] = new_value  # change relevant dec var value in x_curr
+                new_value = self.dds_generator.neigh_value_mixed(
+                    previous_x_curr, r, j, self.min_bound[j], self.max_bound[j])
+                # change relevant dec var value in x_curr
+                new_x_curr[j] = new_value
 
         if dvn_count == 0:  # no DVs selected at random, so select ONE
-            dec_var = np.int(np.ceil(amount_params * self.np_random.rand())) - 1
+            dec_var = np.int(
+                np.ceil(
+                    amount_params * self.np_random.rand())) - 1
             new_value = self.dds_generator.neigh_value_mixed(previous_x_curr, r, dec_var, self.min_bound[dec_var],
                                                              self.max_bound[dec_var])
-            new_x_curr[dec_var] = new_value  # change relevant decision variable value in s_test
+            # change relevant decision variable value in s_test
+            new_x_curr[dec_var] = new_value
 
         return new_x_curr

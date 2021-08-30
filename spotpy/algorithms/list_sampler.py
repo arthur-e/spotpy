@@ -6,11 +6,14 @@ This file is part of Statistical Parameter Optimization Tool for Python(SPOTPY).
 '''
 from . import _algorithm
 from .. import analyser
+
+
 class list_sampler(_algorithm):
     """
     This class holds the List sampler, which samples from a given spotpy database
     """
     _excluded_parameter_classes = ()
+
     def __init__(self, *args, **kwargs):
         """
         Input
@@ -56,18 +59,22 @@ class list_sampler(_algorithm):
             maximum number of function evaluations allowed during sampling
             If not given number if iterations will be determined based on given list
         """
-        
+
         parameters = analyser.load_csv_parameter_results(self.dbname)
-        self.dbname=self.dbname+'list'
+        self.dbname = self.dbname + 'list'
         if not repetitions:
-            repetitions=len(parameters)
+            repetitions = len(parameters)
         self.set_repetiton(repetitions)
-        
+
         # Initialization
-        print('Starting the List sampler with '+str(repetitions)+ ' repetitions...')
+        print(
+            'Starting the List sampler with ' +
+            str(repetitions) +
+            ' repetitions...')
         param_generator = ((rep, list(parameters[rep]))
                            for rep in range(int(repetitions)))
         for rep, randompar, simulations in self.repeat(param_generator):
-            # A function that calculates the fitness of the run and the manages the database 
+            # A function that calculates the fitness of the run and the manages
+            # the database
             self.postprocessing(rep, list(randompar), simulations)
         self.final_call()

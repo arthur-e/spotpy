@@ -6,9 +6,6 @@ This file is part of Statistical Parameter Optimization Tool for Python(SPOTPY).
 '''
 
 
-
-
-
 from . import _algorithm
 import numpy as np
 
@@ -59,7 +56,6 @@ class demcz(_algorithm):
     IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
     WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
     """
-
 
     def __init__(self, *args, **kwargs):
         """
@@ -138,7 +134,10 @@ class demcz(_algorithm):
         """
 
         self.set_repetiton(repetitions)
-        print('Starting the DEMCz algotrithm with '+str(repetitions)+ ' repetitions...')
+        print(
+            'Starting the DEMCz algotrithm with ' +
+            str(repetitions) +
+            ' repetitions...')
 
         self.min_bound, self.max_bound = self.parameter(
         )['minbound'], self.parameter()['maxbound']
@@ -157,7 +156,6 @@ class demcz(_algorithm):
         else:
             slices = [slice(None, None)]
 
-
         # make a list of starting chains that at least span the dimension space
         # in this case it will be of size 2*dim
         nSeedIterations = max(int(np.ceil(dimensions * 2 / nChains)), 2)
@@ -167,7 +165,7 @@ class demcz(_algorithm):
                                      nChains, dimensions)
         history.add_group('interest', slices)
 
-        ### BURN_IN
+        # BURN_IN
         burnInpar = [np.zeros((nChains, dimensions))] * nSeedIterations
         for i in range(nSeedIterations):
             self._logPs = []
@@ -176,10 +174,10 @@ class demcz(_algorithm):
             param_generator = (
                 (rep, self.parameter()['random']) for rep in range(int(nChains)))
 
-
             for rep, vector, simulations in self.repeat(param_generator):
                 burnInpar[i][rep] = vector
-                likelist = self.postprocessing(i, vector, simulations, chains=rep)
+                likelist = self.postprocessing(
+                    i, vector, simulations, chains=rep)
                 simulationlist.append(simulations)
                 self._logPs.append(likelist)
                 old_like[rep] = likelist
@@ -208,7 +206,8 @@ class demcz(_algorithm):
             # continue sampling if:
             # 1) we have not drawn enough samples to satisfy the minimum number of iterations
             # 2) or any of the dimensions have not converged
-            # 3) and we have not done more than the maximum number of iterations
+            # 3) and we have not done more than the maximum number of
+            # iterations
 
             while cur_iter < maxChainDraws:
                 print(cur_iter, burnIn)
@@ -220,7 +219,8 @@ class demcz(_algorithm):
                 if jump_beta is None and np.random.randint(5) == 0.0:
                     gamma = np.array([1.0])
                 elif jump_beta is None:
-                    gamma = np.array([2.38 / np.sqrt(2 * DEpairs * dimensions)])
+                    gamma = np.array(
+                        [2.38 / np.sqrt(2 * DEpairs * dimensions)])
                 else:
                     gamma = np.array([
                         (2.38 * jump_beta) / np.sqrt(2 * DEpairs * dimensions)
@@ -251,7 +251,8 @@ class demcz(_algorithm):
                     (rep, list(proposalVectors[rep])) for rep in range(int(nChains)))
                 for rep, vector, simulations in self.repeat(param_generator):
                     new_simulationlist.append(simulations)
-                    like = self.postprocessing(cur_iter+nSeedIterations, list(vector), simulations, chains=rep)
+                    like = self.postprocessing(
+                        cur_iter + nSeedIterations, list(vector), simulations, chains=rep)
                     self._logPs.append(like)
                     new_likelist.append(like)
                     proposalLogPs.append(like)
@@ -264,35 +265,37 @@ class demcz(_algorithm):
                     # each chain proposal
                     decisions, acceptance = self._metropolis_hastings(
                         currentLogPs, proposalLogPs, nChains)
-                    self._update_accepts_ratio(accepts_ratio_weighting, acceptance)
+                    self._update_accepts_ratio(
+                        accepts_ratio_weighting, acceptance)
                     # choose from list of possible choices if 1d_decision is True at
                     # specific index, else use default choice
                     # np.choose(1d_decision[:,None], (list of possible choices, default
                     # choice)
-                    save_likes=[]
-                    save_pars=[]
-                    save_sims=[]
+                    save_likes = []
+                    save_pars = []
+                    save_sims = []
 
                     for curchain in range(nChains):
                         if decisions[curchain]:
-                           save_likes.append(float(new_likelist[curchain]))
-                           old_like[curchain]=float(new_likelist[curchain])
-                           save_pars.append(proposalVectors[curchain])
-                           save_sims.append(new_simulationlist[curchain])
+                            save_likes.append(float(new_likelist[curchain]))
+                            old_like[curchain] = float(new_likelist[curchain])
+                            save_pars.append(proposalVectors[curchain])
+                            save_sims.append(new_simulationlist[curchain])
                         else:
-                           save_likes.append(old_like[curchain])
-                           save_pars.append(currentVectors[curchain])
-                           save_sims.append(old_simulationlist[curchain])
+                            save_likes.append(old_like[curchain])
+                            save_pars.append(currentVectors[curchain])
+                            save_sims.append(old_simulationlist[curchain])
 
                     currentVectors = np.choose(
                         decisions[:, np.newaxis], (currentVectors, proposalVectors))
-                    currentLogPs = np.choose(decisions, (currentLogPs, proposalLogPs))
+                    currentLogPs = np.choose(
+                        decisions, (currentLogPs, proposalLogPs))
 
                     simulationlist = [[new_simulationlist, old_simulationlist][
                         int(x)][ix] for ix, x in enumerate(decisions)]
 
                     likelist = list(
-                        np.choose(decisions[:, np.newaxis], (new_likelist,       old_likelist)))
+                        np.choose(decisions[:, np.newaxis], (new_likelist, old_likelist)))
 
                     # we only want to recalculate convergence criteria when we are past
                     # the burn in period
@@ -309,8 +312,8 @@ class demcz(_algorithm):
                         history.record(
                             currentVectors, currentLogPs, historyStartMovementRate, grConvergence=grConvergence.R)
 
-
-                if history.nsamples > 0 and cur_iter > lastRecalculation * 1.1 and history.nsequence_histories > dimensions:
+                if history.nsamples > 0 and cur_iter > lastRecalculation * \
+                        1.1 and history.nsequence_histories > dimensions:
                     lastRecalculation = cur_iter
                     grConvergence.update(history)
                     covConvergence.update(history, 'all')
@@ -319,7 +322,7 @@ class demcz(_algorithm):
                         cur_iter = maxChainDraws
                         print(
                             'All chains fullfil the convergence criteria. Sampling stopped.')
-                cur_iter+=1
+                cur_iter += 1
 
         # 3) finalize
         # only make the second half of draws available because that's the only
@@ -333,7 +336,6 @@ class demcz(_algorithm):
         print(text)
         self.status.rep = self.status.repetitions
         self.final_call()
-
 
     def _update_accepts_ratio(self, weighting, acceptances):
         self.accepts_ratio = weighting * \
@@ -405,7 +407,6 @@ class _SimulationHistory(object):
             self.relevantHistoryStart += increment
         self.r_hat.append(grConvergence)
 
-
     def start_sampling(self):
         self._sampling_start = self.relevantHistoryEnd
 
@@ -414,7 +415,8 @@ class _SimulationHistory(object):
         return self.group_sequence_histories('all')
 
     def group_sequence_histories(self, name):
-        return self._sequence_histories[:, self.group_indicies[name], int(np.ceil(self.relevantHistoryStart)):self.relevantHistoryEnd]
+        return self._sequence_histories[:, self.group_indicies[name], int(
+            np.ceil(self.relevantHistoryStart)):self.relevantHistoryEnd]
 
     @property
     def nsequence_histories(self):
@@ -425,7 +427,8 @@ class _SimulationHistory(object):
         return self.group_combined_history('all')
 
     def group_combined_history(self, name):
-        return self._combined_history[(int(np.ceil(self.relevantHistoryStart)) * self._nChains):(self.relevantHistoryEnd * self._nChains), self.group_indicies[name]]
+        return self._combined_history[(int(np.ceil(self.relevantHistoryStart)) * self._nChains):(
+            self.relevantHistoryEnd * self._nChains), self.group_indicies[name]]
 
     @property
     def ncombined_history(self):
@@ -451,7 +454,8 @@ class _SimulationHistory(object):
 
     @property
     def combined_history_logps(self):
-        return self._logPHistory[(np.ceil(self.relevantHistoryStart) * self._nChains):(self.relevantHistoryEnd * self._nChains)]
+        return self._logPHistory[(np.ceil(
+            self.relevantHistoryStart) * self._nChains):(self.relevantHistoryEnd * self._nChains)]
 
 
 def _random_no_replace(sampleSize, populationSize, numSamples):
@@ -532,7 +536,8 @@ def _eigen(a, n=-1):
     return _eigenvalues[indicies[0:n]], _eigenvectors[:, indicies[0:n]]
 
 
-def _dream_proposals(currentVectors, history, dimensions, nChains, DEpairs, gamma, jitter, eps):
+def _dream_proposals(currentVectors, history, dimensions,
+                     nChains, DEpairs, gamma, jitter, eps):
     """
     generates and returns proposal vectors given the current states
     """
@@ -612,15 +617,18 @@ class _GRConvergence:
         if np.abs(withinChainVariances).all() > 0:
             self._R = np.sqrt(varEstimate / withinChainVariances)
         else:
-            self._R = np.random.uniform(0.1,0.9,withinChainVariances.__len__())
+            self._R = np.random.uniform(
+                0.1, 0.9, withinChainVariances.__len__())
 
-        # self._W can be a float or an array, in both cases I want to exclude 0.0 values
+        # self._W can be a float or an array, in both cases I want to exclude
+        # 0.0 values
         try:
             if self._W != 0.0:
-                if (withinChainVariances / self._W).all() <=0.0:
+                if (withinChainVariances / self._W).all() <= 0.0:
                     self._WChange = np.abs(np.log(1.1) ** .5)
                 else:
-                    self._WChange = np.abs(np.log(withinChainVariances / self._W)**.5)
+                    self._WChange = np.abs(
+                        np.log(withinChainVariances / self._W)**.5)
             else:
                 self._WChange = np.abs(np.log(1.1) ** .5)
         except ValueError:
@@ -628,22 +636,23 @@ class _GRConvergence:
                 if (withinChainVariances / self._W).all() <= 0.0:
                     self._WChange = np.abs(np.log(1.1) ** .5)
                 else:
-                    # log of values less then 1 gives a negative number, where I replace these values to get square working
+                    # log of values less then 1 gives a negative number, where
+                    # I replace these values to get square working
                     tmp_WChDV = varEstimate / self._V
                     tmp_WChDV[tmp_WChDV < 1.0] = np.random.uniform(1, 5, 1)
                     self._WChange = np.abs(np.log(tmp_WChDV) ** .5)
             else:
                 self._WChange = np.abs(np.log(1.1) ** .5)
 
-
         self._W = withinChainVariances
 
         if (varEstimate / self._V).any() <= 0.0 or np.isnan(varEstimate / self._V).any():
             self._VChange = np.abs(np.log(1.1) ** .5)
         else:
-            # log of values less then 1 gives a negative number, where I replace these values to get square working
+            # log of values less then 1 gives a negative number, where I
+            # replace these values to get square working
             tmp_EsDV = varEstimate / self._V
-            tmp_EsDV[tmp_EsDV<1.0]=np.random.uniform(1,5,1)
+            tmp_EsDV[tmp_EsDV < 1.0] = np.random.uniform(1, 5, 1)
             self._VChange = np.abs(np.log(tmp_EsDV) ** .5)
 
         self._V = varEstimate

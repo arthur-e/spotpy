@@ -7,6 +7,7 @@ from spotpy.parameter import ParameterSet
 import copy
 from scipy.spatial.qhull import ConvexHull, QhullError
 
+
 class BestValue(object):
     """
         BestValue holds a parameter set and a best objective value, which is used by the PADDS Algorithm.
@@ -18,7 +19,6 @@ class BestValue(object):
         self.parameters = ParameterSet(self.para_func())
         self.best_obj_val = obj_value
         self.best_rep = 0
-
 
     def copy(self):
         to_copy = BestValue(self.parameters.copy(), self.best_obj_val)
@@ -90,14 +90,13 @@ class padds(_algorithm):
         except KeyError:
             self.r = 0.2  # default value
 
-        self._return_all_likes=True #allows multi-objective calibration
+        self._return_all_likes = True  # allows multi-objective calibration
         kwargs['optimization_direction'] = 'minimize'
         kwargs['algorithm_name'] = 'Pareto Archived Dynamically Dimensioned Search (PADDS) algorithm'
 
         super(padds, self).__init__(*args, **kwargs)
 
         self.np_random = np.random
-
 
         self.best_value = BestValue(self.parameter, None)
 
@@ -115,7 +114,7 @@ class padds(_algorithm):
 
     def _set_np_random(self, f_rand):
         self.np_random = f_rand
-        if hasattr(self,"hvc"):
+        if hasattr(self, "hvc"):
             self.hvc._set_np_random(f_rand)
         self.dds_generator.np_random = f_rand
 
@@ -134,34 +133,43 @@ class padds(_algorithm):
         for rep in range(self.generator_repetitions):
             if self.dominance_flag == -1:  # if the last generated solution was dominated
                 index = self.roulette_wheel(self.metric)
-                self.best_value.parameters, self.best_value.best_obj_val = self.pareto_front[index][1], self.pareto_front[index][0]
+                self.best_value.parameters, self.best_value.best_obj_val = self.pareto_front[
+                    index][1], self.pareto_front[index][0]
             else:  # otherwise use the last generated solution
-                self.best_value.parameters, self.best_value.best_obj_val = (self.parameter_current, self.obj_func_current)
+                self.best_value.parameters, self.best_value.best_obj_val = (
+                    self.parameter_current, self.obj_func_current)
 
             # # This line is needed to get an array of data converted into a parameter object
             self.best_value.fix_format()
 
             yield rep, self.calculate_next_s_test(self.best_value.parameters, rep, self.generator_repetitions, self.r)
 
-    def calculate_initial_parameterset(self, repetitions, initial_objs, initial_params):
+    def calculate_initial_parameterset(
+            self, repetitions, initial_objs, initial_params):
         self.obj_func_current = np.array([0.0])
         self.parameter_current = np.array([0.0] * self.number_of_parameters)
-        self.parameter_range = self.best_value.parameters.maxbound - self.best_value.parameters.minbound
-        self.pareto_front = np.array([[np.array([]), np.array([0] * self.number_of_parameters)]])
+        self.parameter_range = self.best_value.parameters.maxbound - \
+            self.best_value.parameters.minbound
+        self.pareto_front = np.array(
+            [[np.array([]), np.array([0] * self.number_of_parameters)]])
         #self.pareto_front = np.array([np.append([np.inf] * self.like_struct_len, [0] * self.number_of_parameters)])
 
         if(len(initial_objs) != len(initial_params)):
-            raise ValueError("User specified 'initial_objs' and 'initial_params' have no equal length")
+            raise ValueError(
+                "User specified 'initial_objs' and 'initial_params' have no equal length")
 
         if len(initial_objs) == 0:
-            initial_iterations = np.int(np.max([5, round(0.005 * repetitions)]))
+            initial_iterations = np.int(
+                np.max([5, round(0.005 * repetitions)]))
             self.calc_initial_pareto_front(initial_iterations)
         elif initial_params.shape[1] != self.number_of_parameters:
-            raise ValueError("User specified 'initial_params' has not the same length as available parameters")
+            raise ValueError(
+                "User specified 'initial_params' has not the same length as available parameters")
         else:
             if not (np.all(initial_params <= self.best_value.parameters.maxbound) and np.all(
                     initial_params >= self.best_value.parameters.minbound)):
-                raise ValueError("User specified 'initial_params' but the values are not within the parameter range")
+                raise ValueError(
+                    "User specified 'initial_params' but the values are not within the parameter range")
             initial_iterations = initial_params.shape[0]
 
             for i in range(initial_params.shape[0]):
@@ -169,10 +177,12 @@ class padds(_algorithm):
                 if len(initial_objs[i]) > 0:
                     self.obj_func_current = np.array(initial_objs[i])
                 else:
-                    self.obj_func_current = np.array(self.getfitness(simulation=[], params=self.parameter_current))
+                    self.obj_func_current = np.array(self.getfitness(
+                        simulation=[], params=self.parameter_current))
 
                 if i == 0:  # Initial value
-                    self.pareto_front = np.array([[self.obj_func_current, self.parameter_current]])
+                    self.pareto_front = np.array(
+                        [[self.obj_func_current, self.parameter_current]])
                     dominance_flag = 1
                 else:
                     self.pareto_front, dominance_flag = nd_check(self.pareto_front, self.obj_func_current,
@@ -181,24 +191,32 @@ class padds(_algorithm):
 
         return initial_iterations, copy.deepcopy(self.parameter_current)
 
-    def sample(self, repetitions, trials=1, initial_objs=np.array([]), initial_params=np.array([]), metric="ones"):
+    def sample(self, repetitions, trials=1, initial_objs=np.array(
+            []), initial_params=np.array([]), metric="ones"):
         # every iteration a map of all relevant values is stored, only for debug purpose.
         # Spotpy will not need this values.
         debug_results = []
-        print('Starting the PADDS algotrithm with ' + str(repetitions) + ' repetitions...')
+        print(
+            'Starting the PADDS algotrithm with ' +
+            str(repetitions) +
+            ' repetitions...')
         print('WARNING: THE PADDS algorithm as implemented in SPOTPY is in an beta stage and not ready for production use!')
         self.set_repetiton(repetitions)
-        self.number_of_parameters = len(self.best_value.parameters) # number_of_parameters is the amount of parameters
+        # number_of_parameters is the amount of parameters
+        self.number_of_parameters = len(self.best_value.parameters)
 
         if metric == "hvc":
             self.hvc = HVC(np_random=self.np_random)
-        
-        self.min_bound, self.max_bound = self.parameter()['minbound'], self.parameter()['maxbound']
 
-        # Users can define trial runs in within "repetition" times the algorithm will be executed
+        self.min_bound, self.max_bound = self.parameter(
+        )['minbound'], self.parameter()['maxbound']
+
+        # Users can define trial runs in within "repetition" times the
+        # algorithm will be executed
         for trial in range(trials):
             self.best_value.best_obj_val = 1e-308
-            repitionno_best, self.best_value.parameters = self.calculate_initial_parameterset(repetitions, initial_objs, initial_params)
+            repitionno_best, self.best_value.parameters = self.calculate_initial_parameterset(
+                repetitions, initial_objs, initial_params)
 
             repetions_left = repetitions - repitionno_best
 
@@ -209,17 +227,23 @@ class padds(_algorithm):
             # method `get_next_s_test` can generate exact parameters
             self.generator_repetitions = repetions_left
 
-            for rep, x_curr, simulations in self.repeat(self.get_next_x_curr()):
-                obj_func_current = self.postprocessing(rep, x_curr, simulations)
+            for rep, x_curr, simulations in self.repeat(
+                    self.get_next_x_curr()):
+                obj_func_current = self.postprocessing(
+                    rep, x_curr, simulations)
                 self.obj_func_current = np.array(obj_func_current)
-                num_imp = np.sum(self.obj_func_current <= self.best_value.best_obj_val)
-                num_deg = np.sum(self.obj_func_current > self.best_value.best_obj_val)
+                num_imp = np.sum(
+                    self.obj_func_current <= self.best_value.best_obj_val)
+                num_deg = np.sum(
+                    self.obj_func_current > self.best_value.best_obj_val)
 
                 if num_imp == 0 and num_deg > 0:
                     self.dominance_flag = -1  # New solution is dominated by its parents
                 else:  # Do dominance check only if new solution is not dominated by its parent
-                    self.pareto_front, self.dominance_flag = nd_check(self.pareto_front, self.obj_func_current, x_curr.copy())
-                    if self.dominance_flag != -1:  # means, that new parameter set is a new non-dominated solution
+                    self.pareto_front, self.dominance_flag = nd_check(
+                        self.pareto_front, self.obj_func_current, x_curr.copy())
+                    if self.dominance_flag != - \
+                            1:  # means, that new parameter set is a new non-dominated solution
                         self.metric = self.calc_metric(metric)
                 self.parameter_current = x_curr
                 # update the new status structure
@@ -227,7 +251,8 @@ class padds(_algorithm):
 
             print('Best solution found has obj function value of ' + str(self.best_value.best_obj_val) + ' at '
                   + str(repitionno_best) + '\n\n')
-            debug_results.append({"sbest": self.best_value.parameters , "objfunc_val": self.best_value.best_obj_val})
+            debug_results.append(
+                {"sbest": self.best_value.parameters, "objfunc_val": self.best_value.best_obj_val})
 
         self.final_call()
         return debug_results
@@ -240,11 +265,11 @@ class padds(_algorithm):
         if metric == "ones":
             return np.array([1] * self.pareto_front.shape[0])
         elif metric == "crowd_distance":
-            return crowd_dist(np.array([w for w in self.pareto_front[:,0]]))
+            return crowd_dist(np.array([w for w in self.pareto_front[:, 0]]))
         elif metric == "chc":
-            return chc(np.array([w for w in self.pareto_front[:,0]]))
+            return chc(np.array([w for w in self.pareto_front[:, 0]]))
         elif metric == "hvc":
-            return self.hvc(np.array([w for w in self.pareto_front[:,0]]))
+            return self.hvc(np.array([w for w in self.pareto_front[:, 0]]))
         else:
             raise AttributeError("metric argument is invalid")
 
@@ -253,7 +278,6 @@ class padds(_algorithm):
         calculate the initial pareto front
         :param its: amount of initial parameters
         """
-
 
         dominance_flag = -1
         for i in range(its):
@@ -265,8 +289,10 @@ class padds(_algorithm):
                     self.parameter_current[j] = self.best_value.parameters.minbound[j] + self.parameter_range[
                         j] * self.np_random.rand()  # uniform random
 
-            id, params, model_simulations = self.simulate((range(len(self.parameter_current)), self.parameter_current))
-            self.obj_func_current = self.getfitness(simulation=model_simulations, params=self.parameter_current)
+            id, params, model_simulations = self.simulate(
+                (range(len(self.parameter_current)), self.parameter_current))
+            self.obj_func_current = self.getfitness(
+                simulation=model_simulations, params=self.parameter_current)
             # First value will be used to initialize the values
             if i == 0:
                 self.pareto_front = np.vstack(
@@ -276,7 +302,6 @@ class padds(_algorithm):
                                                                self.parameter_current.copy())
 
         self.dominance_flag = dominance_flag
-
 
     def calculate_next_s_test(self, previous_x_curr, rep, rep_limit, r):
         """
@@ -297,7 +322,8 @@ class padds(_algorithm):
         :return: next parameter set
         """
         amount_params = len(previous_x_curr)
-        new_x_curr = previous_x_curr.copy()  # define new_x_curr initially as current (previous_x_curr for greedy)
+        # define new_x_curr initially as current (previous_x_curr for greedy)
+        new_x_curr = previous_x_curr.copy()
 
         randompar = self.np_random.rand(amount_params)
 
@@ -305,17 +331,22 @@ class padds(_algorithm):
         dvn_count = 0  # counter for how many decision variables vary in neighbour
 
         for j in range(amount_params):
-            if randompar[j] < probability_neighborhood:  # then j th DV selected to vary in neighbour
+            # then j th DV selected to vary in neighbour
+            if randompar[j] < probability_neighborhood:
                 dvn_count = dvn_count + 1
-                new_value = self.dds_generator.neigh_value_mixed(previous_x_curr, r, j, self.min_bound[j],self.max_bound[j])
-                new_x_curr[j] = new_value  # change relevant dec var value in x_curr
+                new_value = self.dds_generator.neigh_value_mixed(
+                    previous_x_curr, r, j, self.min_bound[j], self.max_bound[j])
+                # change relevant dec var value in x_curr
+                new_x_curr[j] = new_value
 
         if dvn_count == 0:  # no DVs selected at random, so select ONE
 
             dec_var = np.int(np.ceil(amount_params * self.np_random.rand()))
-            new_value = self.dds_generator.neigh_value_mixed(previous_x_curr, r, dec_var - 1,  self.min_bound[dec_var - 1],self.max_bound[dec_var - 1])
+            new_value = self.dds_generator.neigh_value_mixed(
+                previous_x_curr, r, dec_var - 1, self.min_bound[dec_var - 1], self.max_bound[dec_var - 1])
 
-            new_x_curr[dec_var - 1] = new_value  # change relevant decision variable value in s_test
+            # change relevant decision variable value in s_test
+            new_x_curr[dec_var - 1] = new_value
         return new_x_curr
 
 
@@ -339,7 +370,8 @@ def nd_check(nd_set_input, objective_values, parameter_set):
     nd_set = deepcopy(nd_set_input)
     dominance_flag = 0
 
-    # These are simply reshaping problems if we want to loop over arrays but we have a single float given
+    # These are simply reshaping problems if we want to loop over arrays but
+    # we have a single float given
     objective_values = np.array(objective_values)
     try:
         like_struct_len = objective_values.shape[0]
@@ -360,7 +392,7 @@ def nd_check(nd_set_input, objective_values, parameter_set):
         try:
             _ = objective_values < nd_set[i][0]
         except ValueError:
-            nd_set[i][0] = np.array([np.inf]*objective_values.shape[0])
+            nd_set[i][0] = np.array([np.inf] * objective_values.shape[0])
 
         num_eql = np.sum(objective_values == nd_set[i][0])
         num_imp = np.sum(objective_values < nd_set[i][0])
@@ -372,7 +404,8 @@ def nd_check(nd_set_input, objective_values, parameter_set):
         elif num_eql == like_struct_len:
             # Objective functions are the same for parameter_set and archived solution i
             # TODO check if this line still works
-            nd_set[i][0], nd_set[i][1] = objective_values, parameter_set  # Replace solution i in ND_set with X
+            # Replace solution i in ND_set with X
+            nd_set[i][0], nd_set[i][1] = objective_values, parameter_set
             dominance_flag = 0  # X is non - dominated
             return nd_set, dominance_flag
         elif num_imp > 0 and num_deg == 0:  # X dominates ith solution in the ND_set
@@ -381,7 +414,8 @@ def nd_check(nd_set_input, objective_values, parameter_set):
             dominance_flag = 1
 
     if nd_set.size == 0:  # that means the array is completely empty
-        nd_set = np.array([objective_values, parameter_set])  # Set solution i in ND_set with X
+        # Set solution i in ND_set with X
+        nd_set = np.array([objective_values, parameter_set])
     else:  # If X dominated a portion of solutions in ND_set
         nd_set = np.vstack(
             [nd_set, np.array([objective_values, parameter_set])])  # Add the new solution to the end of ND_set (for later use and comparing!
@@ -444,7 +478,8 @@ def crowd_dist(points):
             #  https://stackoverflow.com/a/22699957/5885054
             temp = temp[temp[:, i].argsort()]
             temp[0, ij] = temp[0, ij] + 2 * (temp[1, i] - temp[0, i])
-            temp[length_y - 1, ij] = temp[length_y - 1, ij] + 2 * (temp[length_y - 1, i] - temp[length_y - 2, i])
+            temp[length_y - 1, ij] = temp[length_y - 1, ij] + 2 * \
+                (temp[length_y - 1, i] - temp[length_y - 2, i])
 
             for j in range(1, length_y - 1):
                 temp[j, ij] = temp[j, ij] + (temp[j + 1, i] - temp[j - 1, i])
@@ -454,7 +489,7 @@ def crowd_dist(points):
 
     #  Endpoints of Pareto Front
     temp = temp[temp[:, temp.shape[
-                            1] - 1].argsort()]  # Sort points based on the last column to restore the original order of points in the archive
+        1] - 1].argsort()]  # Sort points based on the last column to restore the original order of points in the archive
     endpointIndx = np.unique(endpointIndx)
 
     non_endpointIndx = np.array(range(length_y)).reshape((length_y, 1))
@@ -464,7 +499,9 @@ def crowd_dist(points):
 
     Y = points[endpointIndx, :]
     X = points[non_endpointIndx, :]
-    IDX = dsearchn(X, Y)  # Identify the closest point in the objective space to each endpoint (dsearchn in Matlab)
+    # Identify the closest point in the objective space to each endpoint
+    # (dsearchn in Matlab)
+    IDX = dsearchn(X, Y)
     if IDX.size > 0:
         for i in range(endpointIndx.shape[0]):
             temp[endpointIndx[i], ij] = np.nanmax([temp[endpointIndx[i], ij], temp[non_endpointIndx[IDX[
@@ -490,7 +527,9 @@ def dsearchn(x, y):
 
 class HVC():
     def __init__(self, *args, **kwargs):
-        self.fakerandom =  ('fakerandom' in kwargs and kwargs['fakerandom']) or ('np_random' in kwargs)
+        self.fakerandom = (
+            'fakerandom' in kwargs and kwargs['fakerandom']) or (
+            'np_random' in kwargs)
         self.has_random_class = ('np_random' in kwargs)
         self.random_class = (self.has_random_class and kwargs['np_random'])
         from deap.tools._hypervolume import hv
@@ -501,11 +540,11 @@ class HVC():
         ref = np.max(points, axis=0)
         return self.hv(points, ref)
 
-    def _set_np_random(self,f_rand):
+    def _set_np_random(self, f_rand):
         self.random_class = f_rand
         self.has_random_class = True
 
-    def hype_indicator_sampled(self,points, bounds, nrOfSamples):
+    def hype_indicator_sampled(self, points, bounds, nrOfSamples):
         try:
             nrP, dim = points.shape
         except ValueError:
@@ -514,7 +553,8 @@ class HVC():
         F = np.array([0] * nrP)
         BoxL = np.min(points, 0)
 
-        S = np.dot(self.__rand(nrOfSamples, dim), np.diag(bounds - BoxL)) + np.dot(np.ones([nrOfSamples, dim]), np.diag(BoxL))
+        S = np.dot(self.__rand(nrOfSamples, dim), np.diag(bounds - BoxL)
+                   ) + np.dot(np.ones([nrOfSamples, dim]), np.diag(BoxL))
 
         dominated = np.array([0] * nrOfSamples)
         dominated_ind = np.array([0] * nrOfSamples)
@@ -544,8 +584,7 @@ class HVC():
         F = np.transpose(F) * np.prod(bounds - BoxL) / nrOfSamples
         return F  # transpose??
 
-
-    def hv_apprx(self,points):
+    def hv_apprx(self, points):
         p_xlen = np.shape(points)[0]
         p_ylen = np.shape(points)[1]
         indexis = np.array(range(p_xlen)) + 1
@@ -559,9 +598,11 @@ class HVC():
             endpointIndx[2 * (i) + 1] = temp[-1:, -1:]
         endpointIndx = np.int32(np.unique(endpointIndx) - 1)
 
-        nrOfSamples = np.max([10000, 2 * p_xlen])  # Dictates the accuracy of approximation
+        # Dictates the accuracy of approximation
+        nrOfSamples = np.max([10000, 2 * p_xlen])
 
-        HVInf = self.hype_indicator_sampled(points, np.array([1] * p_ylen), nrOfSamples)
+        HVInf = self.hype_indicator_sampled(
+            points, np.array([1] * p_ylen), nrOfSamples)
 
         nonZero_Indx = np.where(HVInf > 0)[0]
         Y = points[endpointIndx, :]
@@ -577,11 +618,10 @@ class HVC():
 
         return HVInf
 
-
     def __rand(self, x, y):
         if self.fakerandom:
             if self.has_random_class:
-                return self.random_class.rand(x,y)
+                return self.random_class.rand(x, y)
             else:
                 dim = x * y + 1
                 step = 1.0 / dim
@@ -592,9 +632,7 @@ class HVC():
                     reshaper = [x, y]
                 return data.reshape(reshaper)
         else:
-            return np.random.rand(x,y)
-
-
+            return np.random.rand(x, y)
 
     def sortrows(self, arr, index):
         """
@@ -605,7 +643,7 @@ class HVC():
         """
         return arr[arr[:, index].argsort()]
 
-    def hv_exact(self,points):
+    def hv_exact(self, points):
         p_xlen = np.shape(points)[0]
         p_ylen = np.shape(points)[1]
 
@@ -639,7 +677,8 @@ class HVC():
             HVInf[indexis[i] - 1] = totalHV - subhv
 
         non_endpointIndx = np.array(range(p_xlen))
-        non_endpointIndx = non_endpointIndx[[i for i in range(p_xlen) if i not in endpointIndx]]
+        non_endpointIndx = non_endpointIndx[[
+            i for i in range(p_xlen) if i not in endpointIndx]]
 
         Y = points[endpointIndx, :]
         X = points[non_endpointIndx, :]
@@ -652,7 +691,6 @@ class HVC():
                 HVInf[endpointIndx[i]] = 1
 
         return HVInf
-
 
     def __call__(self, points):
         p_xlen = np.shape(points)[0]
@@ -681,7 +719,6 @@ class HVC():
             return self.hv_exact(points)
         elif p_ylen > 4:
             return self.hv_apprx(points)
-
 
 
 def chc(points):
@@ -748,16 +785,21 @@ def chc(points):
     all_CHpts_ind[ZEROind] = []
 
     # Identify points in groups ii, iii, iv as defined above
-    top_facets_ind = np.min(norm, 1) >= 0  # facets with outward norm that has only non-negative components
+    # facets with outward norm that has only non-negative components
+    top_facets_ind = np.min(norm, 1) >= 0
 
-    ii_iv_CHpts_ind = np.unique(vertices[top_facets_ind])  # points on top of CH, i.e. groups ii and iv
+    # points on top of CH, i.e. groups ii and iv
+    ii_iv_CHpts_ind = np.unique(vertices[top_facets_ind])
 
     ZEROind = ii_iv_CHpts_ind == 0
     ii_iv_CHpts_ind[ZEROind] = []
     other_facets_ind = np.array(range(norm.shape[0]))  # All facets
-    other_facets_ind = np.delete(other_facets_ind, other_facets_ind[top_facets_ind])
+    other_facets_ind = np.delete(
+        other_facets_ind,
+        other_facets_ind[top_facets_ind])
 
-    iii_iv_CHpts_ind = np.unique(vertices[other_facets_ind, :])  # points on bottom of CH, i.e. groups iii and iv
+    # points on bottom of CH, i.e. groups iii and iv
+    iii_iv_CHpts_ind = np.unique(vertices[other_facets_ind, :])
 
     ZEROind = iii_iv_CHpts_ind == 0
 
@@ -767,7 +809,8 @@ def chc(points):
 
     bor_CHpts_ind = iii_iv_CHpts_ind[bor_ind]
     bot_CHpts_ind = iii_iv_CHpts_ind
-    bot_CHpts_ind = bot_CHpts_ind[bor_ind == False]  # Remove border points from bottom points
+    # Remove border points from bottom points
+    bot_CHpts_ind = bot_CHpts_ind[bor_ind == False]
 
     # When number of bottom points and border points are not enough to form CH
     if bot_CHpts_ind.shape[0] == 0:
@@ -776,7 +819,8 @@ def chc(points):
         return CHC_metric
 
     for i in range(bot_CHpts_ind.shape[0]):
-        y = points[all_CHpts_ind - 1]  # Only consider points that are on the vertices of convex hull
+        # Only consider points that are on the vertices of convex hull
+        y = points[all_CHpts_ind - 1]
         # Meaning that forget the points inside the convex hull
         ind = np.array([j == bot_CHpts_ind[i] for j in all_CHpts_ind])
         y = y[ind == False]
@@ -803,6 +847,7 @@ def chc(points):
     X = points[bot_CHpts_ind - 1, :]
     IDX = dsearchn(X, Y)
     for i in range(bor_CHpts_ind.shape[0]):
-        CHC_metric[bor_CHpts_ind[i] - 1] = CHC_metric[bot_CHpts_ind[IDX[i]] - 1]
+        CHC_metric[bor_CHpts_ind[i] -
+                   1] = CHC_metric[bot_CHpts_ind[IDX[i]] - 1]
 
     return CHC_metric

@@ -8,41 +8,40 @@ from . import _algorithm
 import numpy as np
 
 
-
 class mle(_algorithm):
     """
-    This class holds the Maximum Likelihood (MLE) algorithm, 
+    This class holds the Maximum Likelihood (MLE) algorithm,
     based on a simple uphill method as presented by Houska et al (2015):
-    Houska, T., Kraft, P., Chamorro-Chavez, A. and Breuer, L. (2015) 
+    Houska, T., Kraft, P., Chamorro-Chavez, A. and Breuer, L. (2015)
     SPOTting Model Parameters Using a Ready-Made Python Package, PLoS ONE.
     """
 
     def __init__(self, *args, **kwargs):
         '''
         Implements the Maximum Likelihood Estimation algorithm.
-    
+
         Input
         ----------
         spot_setup: class
-            model: function 
-                Should be callable with a parameter combination of the parameter-function 
+            model: function
+                Should be callable with a parameter combination of the parameter-function
                 and return an list of simulation results (as long as evaluation list)
             parameter: function
-                When called, it should return a random parameter combination. Which can 
+                When called, it should return a random parameter combination. Which can
                 be e.g. uniform or Gaussian
-            objectivefunction: function 
-                Should return the objectivefunction for a given list of a model simulation and 
+            objectivefunction: function
+                Should return the objectivefunction for a given list of a model simulation and
                 observation.
             evaluation: function
                 Should return the true values as return by the model.
-    
+
         dbname: str
             * Name of the database where parameter, objectivefunction value and simulation results will be saved.
-    
+
         dbformat: str
             * ram: fast suited for short sampling time. no file will be created and results are saved in an array.
-            * csv: A csv file will be created, which you can import afterwards.        
-    
+            * csv: A csv file will be created, which you can import afterwards.
+
         save_sim: boolean
             * True:  Simulation results will be saved
             * False: Simulation results will not be saved
@@ -50,7 +49,6 @@ class mle(_algorithm):
         kwargs['optimization_direction'] = 'maximize'
         kwargs['algorithm_name'] = 'Maximum Likelihood Estimation (MLE) algorithm'
         super(mle, self).__init__(*args, **kwargs)
-
 
     def check_par_validity(self, par):
         if len(par) == len(self.min_bound) and len(par) == len(self.max_bound):
@@ -65,7 +63,10 @@ class mle(_algorithm):
 
     def sample(self, repetitions):
         self.set_repetiton(repetitions)
-        print('Starting the MLE algotrithm with '+str(repetitions)+ ' repetitions...')
+        print(
+            'Starting the MLE algotrithm with ' +
+            str(repetitions) +
+            ' repetitions...')
         # Define stepsize of MLE
         stepsizes = self.parameter()['step']  # array of stepsizes
         accepted = 0.0
@@ -85,7 +86,6 @@ class mle(_algorithm):
             like = self.postprocessing(i, randompar, simulations)
             likes.append(like)
 
-
         old_like = max(likes)
         old_par = pars[likes.index(old_like)]
         print('Beginn Random Walk')
@@ -95,7 +95,8 @@ class mle(_algorithm):
             new_par = np.random.normal(loc=old_par, scale=stepsizes)
             new_par = self.check_par_validity(new_par)
             _, _, new_simulations = self.simulate((i, new_par))
-            new_like = self.postprocessing(rep+burnIn, new_par, new_simulations)
+            new_like = self.postprocessing(
+                rep + burnIn, new_par, new_simulations)
             # Accept new candidate in Monte-Carlo fashing.
             if (new_like > old_like):
                 accepted = accepted + 1.0  # monitor acceptance
@@ -103,4 +104,4 @@ class mle(_algorithm):
                 old_like = new_like
                 #self.status(rep, new_like, new_par)
 
-        self.final_call() 
+        self.final_call()

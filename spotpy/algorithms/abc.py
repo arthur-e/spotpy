@@ -58,8 +58,8 @@ class abc(_algorithm):
         kwargs['algorithm_name'] = 'Artificial Bee Colony (ABC) algorithm'
         super(abc, self).__init__(*args, **kwargs)
 
-
-    def sample(self, repetitions, eb=48, a=(1 / 10), peps=0.0001, ownlimit=False, limit=24):
+    def sample(self, repetitions, eb=48, a=(1 / 10),
+               peps=0.0001, ownlimit=False, limit=24):
         """
 
 
@@ -79,7 +79,10 @@ class abc(_algorithm):
             sets the limit
         """
         self.set_repetiton(repetitions)
-        print('Starting the ABC algotrithm with '+str(repetitions)+ ' repetitions...')
+        print(
+            'Starting the ABC algotrithm with ' +
+            str(repetitions) +
+            ' repetitions...')
         # Initialize ABC parameters:
         randompar = self.parameter()['random']
         self.nopt = randompar.size
@@ -98,11 +101,12 @@ class abc(_algorithm):
             (rep, self.parameter()['random']) for rep in range(eb))
         for rep, randompar, simulations in self.repeat(param_generator):
             # Calculate fitness
-            like = self.postprocessing(rep, randompar, simulations, chains = 1, negativlike=True)
+            like = self.postprocessing(
+                rep, randompar, simulations, chains=1, negativlike=True)
             c = 0
             p = 0
             work.append([like, randompar, like, randompar, c, p])
-            icall +=1
+            icall += 1
             if self.status.stop:
                 print('Stopping sampling')
                 break
@@ -127,13 +131,14 @@ class abc(_algorithm):
             param_generator = ((rep, work[rep][3]) for rep in range(eb))
             for rep, randompar, simulations in self.repeat(param_generator):
                 # Calculate fitness
-                clike = self.postprocessing(icall+eb, randompar, simulations, chains = 2, negativlike=True)
+                clike = self.postprocessing(
+                    icall + eb, randompar, simulations, chains=2, negativlike=True)
                 if clike > work[rep][0]:
                     work[rep][1] = work[rep][3]
                     work[rep][0] = clike
                     work[rep][4] = 0
                 else:
-                    work[rep][4] = work[rep][4] + 1                
+                    work[rep][4] = work[rep][4] + 1
                 icall += 1
                 if self.status.stop:
                     print('Stopping samplig')
@@ -162,7 +167,7 @@ class abc(_algorithm):
                     work[i][3][j] = work[z][1][j] + \
                         random.uniform(-a, a) * (work[z][1][j] - work[k][1][j])
                 except UnboundLocalError:
-                    z=0
+                    z = 0
                     work[i][3][j] = work[z][1][j] + \
                         random.uniform(-a, a) * (work[z][1][j] - work[k][1][j])
                 if work[i][3][j] < lb[j]:
@@ -173,13 +178,14 @@ class abc(_algorithm):
             param_generator = ((rep, work[rep][3]) for rep in range(eb))
             for rep, randompar, simulations in self.repeat(param_generator):
                 # Calculate fitness
-                clike = self.postprocessing(icall+eb, randompar, simulations, chains = 3, negativlike=True)
+                clike = self.postprocessing(
+                    icall + eb, randompar, simulations, chains=3, negativlike=True)
                 if clike > work[rep][0]:
                     work[rep][1] = work[rep][3]
                     work[rep][0] = clike
                     work[rep][4] = 0
                 else:
-                    work[rep][4] = work[rep][4] + 1                
+                    work[rep][4] = work[rep][4] + 1
                 icall += 1
                 if self.status.stop:
                     print('Stopping samplig')
@@ -191,7 +197,8 @@ class abc(_algorithm):
                     work[i][4] = 0
                     t, work[i][0], simulations = self.simulate(
                         (icall, work[i][1]))
-                    clike = self.postprocessing(icall+eb, randompar, simulations, chains = 4, negativlike=True)
+                    clike = self.postprocessing(
+                        icall + eb, randompar, simulations, chains=4, negativlike=True)
                     work[i][0] = clike
                     icall += 1
                     if self.status.stop:

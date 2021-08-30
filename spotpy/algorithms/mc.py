@@ -11,12 +11,14 @@ from __future__ import print_function
 from __future__ import unicode_literals
 from . import _algorithm
 
+
 class mc(_algorithm):
     """
     The Monte Carlo algorithm generates random parameters from their respective
     distribution functions.
     """
     _unaccepted_parameter_types = ()
+
     def __init__(self, *args, **kwargs):
         """
         Input
@@ -58,7 +60,7 @@ class mc(_algorithm):
 
         Input
         ----------
-        repetitions: int 
+        repetitions: int
             Maximum number of runs.
         """
         self.set_repetiton(repetitions)
@@ -67,7 +69,7 @@ class mc(_algorithm):
         param_generator = ((rep, self.parameter()['random'])
                            for rep in range(int(repetitions)))
         for rep, randompar, simulations in self.repeat(param_generator):
-            # A function that calculates the fitness of the run and the manages the database 
+            # A function that calculates the fitness of the run and the manages
+            # the database
             self.postprocessing(rep, randompar, simulations)
         self.final_call()
-

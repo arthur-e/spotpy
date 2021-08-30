@@ -15,15 +15,15 @@ import numpy as np
 
 class sceua(_algorithm):
     """
-    This class holds the Shuffled Complex Evolution Algorithm (SCE-UA) algorithm, 
+    This class holds the Shuffled Complex Evolution Algorithm (SCE-UA) algorithm,
     based on:
-    Duan, Q., Sorooshian, S. and Gupta, V. K. (1994) 
+    Duan, Q., Sorooshian, S. and Gupta, V. K. (1994)
     Optimal use of the SCE-UA global optimization method for calibrating watershed models, J. Hydrol.
 
     Based on the PYthon package Optimization_SCE
     Copyright (c) 2011 Stijn Van Hoey.
     Restructured and parallelized by Houska et al (2015):
-    Houska, T., Kraft, P., Chamorro-Chavez, A. and Breuer, L. (2015) 
+    Houska, T., Kraft, P., Chamorro-Chavez, A. and Breuer, L. (2015)
     SPOTting Model Parameters Using a Ready-Made Python Package, PLoS ONE.
 
     """
@@ -70,7 +70,7 @@ class sceua(_algorithm):
         1) burn-in
         2) complex evolution
         """
-        
+
         if not self.repeat.phase:  # burn-in
             return _algorithm.simulate(self, id_params_tuple)
 
@@ -106,11 +106,12 @@ class sceua(_algorithm):
                 s = cx[lcs, :]
                 sf = cf[lcs]
 
-                snew, fnew, simulation, discarded_runs = self._cceua(s, sf, discarded_runs)
+                snew, fnew, simulation, discarded_runs = self._cceua(
+                    s, sf, discarded_runs)
                 likes.append(fnew)
                 pars.append(snew)
                 sims.append(simulation)
-                
+
                 # Replace the worst point in Simplex with the new point:
                 s[-1, :] = snew
                 sf[-1] = fnew
@@ -123,13 +124,14 @@ class sceua(_algorithm):
                 idx = np.argsort(cf)
                 cf = np.sort(cf)
                 cx = cx[idx, :]
-                
+
             # Replace the complex back into the population;
             return igs, likes, pars, sims, cx, cf, k1, k2, discarded_runs
 
-    def sample(self, repetitions, ngs=20, kstop=100, pcento=0.0000001, peps=0.0000001, max_loop_inc=None):
+    def sample(self, repetitions, ngs=20, kstop=100,
+               pcento=0.0000001, peps=0.0000001, max_loop_inc=None):
         """
-        Samples from parameter distributions using SCE-UA (Duan, 2004), 
+        Samples from parameter distributions using SCE-UA (Duan, 2004),
         converted to python by Van Hoey (2011), restructured and parallelized by Houska et al (2015).
 
         Parameters
@@ -165,7 +167,8 @@ class sceua(_algorithm):
         self.stochastic_parameters = bound != 0
         proceed = True
 
-        # burnin_only, needed to indictat if only the burnin phase should be run
+        # burnin_only, needed to indictat if only the burnin phase should be
+        # run
         burnin_only = False
 
         if self.breakpoint == 'read' or self.breakpoint == 'readandwrite':
@@ -188,11 +191,13 @@ class sceua(_algorithm):
             param_generator = ((rep, x[rep]) for rep in range(int(npt)))
             for rep, randompar, simulations in self.repeat(param_generator):
                 # Calculate the objective function
-                like = self.postprocessing(icall, randompar, simulations,chains=0)              
+                like = self.postprocessing(
+                    icall, randompar, simulations, chains=0)
                 xf[rep] = like
-                icall+=1
+                icall += 1
                 if self.status.stop:
-                    print('Stopping samplig. Maximum number of repetitions reached already during burn-in')
+                    print(
+                        'Stopping samplig. Maximum number of repetitions reached already during burn-in')
                     proceed = False
                     break
             # Sort the population in order of increasing function values;
@@ -206,8 +211,10 @@ class sceua(_algorithm):
             print('Burn-in sampling completed...')
 
         else:
-            raise ValueError("Don't know the breakpoint keyword {}".format(self.breakpoint))
-        
+            raise ValueError(
+                "Don't know the breakpoint keyword {}".format(
+                    self.breakpoint))
+
         # Record the best points;
         bestx = x[0, :]
         bestf = xf[0]
@@ -232,9 +239,6 @@ class sceua(_algorithm):
             print(
                 'THE POPULATION HAS CONVERGED TO A PRESPECIFIED SMALL PARAMETER SPACE')
 
-
-
-
         # Begin evolution loops:
         nloop = 0
         criter = []
@@ -257,35 +261,38 @@ class sceua(_algorithm):
 
         while icall < repetitions and gnrng > peps and criter_change_pcent > pcento and proceed == True:
             nloop += 1
-            print ('ComplexEvo loop #%d in progress...' % nloop)
+            print('ComplexEvo loop #%d in progress...' % nloop)
             # Loop on complexes (sub-populations);
             cx = np.zeros((self.npg, self.nopt))
             cf = np.zeros((self.npg))
             remaining_runs = repetitions - self.status.rep
             if remaining_runs <= self.ngs:
-                self.ngs = remaining_runs-1
+                self.ngs = remaining_runs - 1
                 proceed = False
-            
+
             sce_vars = [self.npg, self.nopt, self.ngs, self.nspl,
                         self.nps, self.bl, self.bu, self.stochastic_parameters, self.discarded_runs]
             param_generator = ((rep, x, xf, cx, cf, sce_vars)
                                for rep in range(int(self.ngs)))
-            for igs, likes, pars, sims, cx, cf, k1, k2, discarded_runs in self.repeat(param_generator):
+            for igs, likes, pars, sims, cx, cf, k1, k2, discarded_runs in self.repeat(
+                    param_generator):
                 x[k2, :] = cx[k1, :]
                 xf[k2] = cf[k1]
                 self.discard_runs = discarded_runs
                 for i in range(len(likes)):
-                    if not self.status.stop:    
-                        like = self.postprocessing(i, pars[i], sims[i], chains=i+1)
+                    if not self.status.stop:
+                        like = self.postprocessing(
+                            i, pars[i], sims[i], chains=i + 1)
                     else:
-                        #Collect data from all slaves but do not save
-                        proceed=False
-                        like = self.postprocessing(i, pars[i], sims[i], chains=i+1, save_run=False)
-                        self.discarded_runs+=1
+                        # Collect data from all slaves but do not save
+                        proceed = False
+                        like = self.postprocessing(
+                            i, pars[i], sims[i], chains=i + 1, save_run=False)
+                        self.discarded_runs += 1
                         print('Skipping saving')
-                
+
             if self.breakpoint == 'write' or self.breakpoint == 'readandwrite'\
-              and self.status.rep >= self.backup_every_rep:
+                    and self.status.rep >= self.backup_every_rep:
                 work = (self.status.rep, (x, xf), gnrng)
                 self.write_breakdata(self.dbname, work)
 
@@ -309,7 +316,7 @@ class sceua(_algorithm):
                 np.mean(np.log((np.max(x[:, self.stochastic_parameters], axis=0) - np.min(x[:, self.stochastic_parameters], axis=0)) / bound[self.stochastic_parameters])))
 
             criter = np.append(criter, bestf)
-            
+
             # Check for convergency;
             if self.status.rep >= repetitions:
                 print('*** OPTIMIZATION SEARCH TERMINATED BECAUSE THE LIMIT')
@@ -321,17 +328,17 @@ class sceua(_algorithm):
                 print(
                     'THE POPULATION HAS CONVERGED TO A PRESPECIFIED SMALL PARAMETER SPACE')
 
-
             elif nloop >= kstop:  # necessary so that the area of high posterior density is visited as much as possible
-                print ('Objective function convergence criteria is now being updated and assessed...')
+                print(
+                    'Objective function convergence criteria is now being updated and assessed...')
                 absolute_change = np.abs(
-                    criter[nloop - 1] - criter[nloop - kstop])*100
+                    criter[nloop - 1] - criter[nloop - kstop]) * 100
                 denominator = np.mean(np.abs(criter[(nloop - kstop):nloop]))
                 if denominator == 0.0:
                     criter_change_pcent = 0.0
                 else:
                     criter_change_pcent = absolute_change / denominator
-                print ('Updated convergence criteria: %f' % criter_change_pcent)
+                print('Updated convergence criteria: %f' % criter_change_pcent)
                 if criter_change_pcent <= pcento:
                     print('THE BEST POINT HAS IMPROVED IN LAST %d LOOPS BY LESS THAN THE USER-SPECIFIED THRESHOLD %f' % (
                         kstop, pcento))
@@ -346,7 +353,7 @@ class sceua(_algorithm):
                 proceed = False
                 print('THE MAXIMAL NUMBER OF LOOPS PER EXECUTION WAS REACHED')
                 break
-            
+
         # End of the Outer Loops
         print('SEARCH WAS STOPPED AT TRIAL NUMBER: %d' % self.status.rep)
         print('NUMBER OF DISCARDED TRIALS: %d' % self.discarded_runs)
@@ -357,24 +364,23 @@ class sceua(_algorithm):
         # reshape BESTX
         #BESTX = BESTX.reshape(BESTX.size // self.nopt, self.nopt)
         self.final_call()
-        
 
     def _cceua(self, s, sf, discarded_runs):
-            #  This is the subroutine for generating a new point in a simplex
-            #
-            #   s(.,.) = the sorted simplex in order of increasing function values
-            #   s(.) = function values in increasing order
-            #
-            # LIST OF LOCAL VARIABLES
-            #   sb(.) = the best point of the simplex
-            #   sw(.) = the worst point of the simplex
-            #   w2(.) = the second worst point of the simplex
-            #   fw = function value of the worst point
-            #   ce(.) = the centroid of the simplex excluding wo
-            #   snew(.) = new point generated from the simplex
-            #   iviol = flag indicating if constraints are violated
-            #         = 1 , yes
-            #         = 0 , no
+        #  This is the subroutine for generating a new point in a simplex
+        #
+        #   s(.,.) = the sorted simplex in order of increasing function values
+        #   s(.) = function values in increasing order
+        #
+        # LIST OF LOCAL VARIABLES
+        #   sb(.) = the best point of the simplex
+        #   sw(.) = the worst point of the simplex
+        #   w2(.) = the second worst point of the simplex
+        #   fw = function value of the worst point
+        #   ce(.) = the centroid of the simplex excluding wo
+        #   snew(.) = new point generated from the simplex
+        #   iviol = flag indicating if constraints are violated
+        #         = 1 , yes
+        #         = 0 , no
         constant_parameters = np.invert(self.stochastic_parameters)
         self.nps, self.nopt = s.shape
         alpha = 1.0
@@ -407,9 +413,14 @@ class sceua(_algorithm):
 
         ##    fnew = functn(self.nopt,snew);
         _, _, simulations = _algorithm.simulate(self, (1, snew))
-        like = self.postprocessing(1, snew, simulations, save_run=False, block_print=True)
-        discarded_runs+=1
-            
+        like = self.postprocessing(
+            1,
+            snew,
+            simulations,
+            save_run=False,
+            block_print=True)
+        discarded_runs += 1
+
         fnew = like
 
         # Reflection failed; now attempt a contraction point:
@@ -418,16 +429,18 @@ class sceua(_algorithm):
             snew[constant_parameters] = sw[constant_parameters]
 
             _, _, simulations = _algorithm.simulate(self, (2, snew))
-            like = self.postprocessing(2, snew, simulations, save_run=False, block_print=True)
-            discarded_runs+=1
+            like = self.postprocessing(
+                2, snew, simulations, save_run=False, block_print=True)
+            discarded_runs += 1
             fnew = like
 
         # Both reflection and contraction have failed, attempt a random point;
             if fnew > fw:
                 snew = self._sampleinputmatrix(1, self.nopt)[0]
                 _, _, simulations = _algorithm.simulate(self, (3, snew))
-                like = self.postprocessing(3, snew, simulations, save_run=False, block_print=True)
-                discarded_runs+=1
+                like = self.postprocessing(
+                    3, snew, simulations, save_run=False, block_print=True)
+                discarded_runs += 1
             fnew = like
         # END OF CCE
         return snew, fnew, simulations, discarded_runs

@@ -16,15 +16,15 @@ import random
 
 class fscabc(_algorithm):
     """
-    This class holds the Fitness Scaled Chaotic Artificial Bee Colony (FSCABC) algorithm, 
+    This class holds the Fitness Scaled Chaotic Artificial Bee Colony (FSCABC) algorithm,
     based on:
-    
-    Yudong Zhang, Lenan Wu, and Shuihua Wang (2011). Magnetic Resonance Brain Image 
-    Classification by an Improved Artificial Bee Colony Algorithm. 
+
+    Yudong Zhang, Lenan Wu, and Shuihua Wang (2011). Magnetic Resonance Brain Image
+    Classification by an Improved Artificial Bee Colony Algorithm.
     Progress In Electromagnetics Research
-    
-    Yudong Zhang, Lenan Wu, and Shuihua Wang (2013). 
-    UCAV Path Planning by Fitness-Scaling Adaptive Chaotic Particle Swarm Optimization. 
+
+    Yudong Zhang, Lenan Wu, and Shuihua Wang (2013).
+    UCAV Path Planning by Fitness-Scaling Adaptive Chaotic Particle Swarm Optimization.
     Mathematical Problems in Engineering
     """
 
@@ -68,8 +68,8 @@ class fscabc(_algorithm):
         x = 4 * r * (1 - r)
         return x
 
-
-    def sample(self, repetitions, eb=48, a=(1 / 10), peps=0.0001, kpow=4, limit=None):
+    def sample(self, repetitions, eb=48, a=(1 / 10),
+               peps=0.0001, kpow=4, limit=None):
         """
         Parameters
         ----------
@@ -80,30 +80,33 @@ class fscabc(_algorithm):
         a: float
             mutation factor
         peps: float
-            convergence criterion    
+            convergence criterion
         kpow: float
             exponent for power scaling method
         limit: int
             sets the limit for scout bee phase
         """
         self.set_repetiton(repetitions)
-        print('Starting the FSCABC algotrithm with '+str(repetitions)+ ' repetitions...')
+        print(
+            'Starting the FSCABC algotrithm with ' +
+            str(repetitions) +
+            ' repetitions...')
         # Initialize FSCABC parameters:
         parset = self.parameter()
         randompar = parset['random']
         lb, ub = parset['minbound'], parset['maxbound']
         self.nopt = randompar.size
         random.seed()
-        lastbackup=0
-        if limit == None:
-            self.limit = int(eb/2)
+        lastbackup = 0
+        if limit is None:
+            self.limit = int(eb / 2)
         else:
             self.limit = int(limit)
         # Generate chaos
         r = 0.25
         while r == 0.25 or r == 0.5 or r == 0.75:
             r = random.random()
-            
+
         icall = 0
         gnrng = 1e100
 
@@ -122,18 +125,19 @@ class fscabc(_algorithm):
                 (rep, self.parameter()['random']) for rep in range(eb))
             for rep, randompar, simulations in self.repeat(param_generator):
                 # Calculate fitness
-                like = self.postprocessing(rep, randompar, simulations, negativlike=True)
+                like = self.postprocessing(
+                    rep, randompar, simulations, negativlike=True)
                 c = 0
                 p = 0
                 # (fit_x,x,fit_v,v,limit,normalized fitness)
                 work.append([like, randompar, like, randompar, c, p])
-                icall +=1
+                icall += 1
                 if self.status.stop:
                     #icall = repetitions
                     print('Stopping samplig')
                     break
 
-        #Bee Phases
+        # Bee Phases
         while icall < repetitions and gnrng > peps:
             # Employed bee phase
             # Generate new input parameters
@@ -158,7 +162,8 @@ class fscabc(_algorithm):
             param_generator = ((rep, work[rep][3]) for rep in range(eb))
             for rep, randompar, simulations in self.repeat(param_generator):
                 # Calculate fitness
-                clike = self.postprocessing(icall, randompar, simulations, chains=1, negativlike=True)
+                clike = self.postprocessing(
+                    icall, randompar, simulations, chains=1, negativlike=True)
                 if clike > work[rep][0]:
                     work[rep][1] = work[rep][3]
                     work[rep][0] = clike
@@ -169,7 +174,7 @@ class fscabc(_algorithm):
                 if self.status.stop:
                     print('Stopping samplig')
                     break
-                
+
             # Fitness scaling
             bn = []
             csum = 0
@@ -204,7 +209,8 @@ class fscabc(_algorithm):
             param_generator = ((rep, work[rep][3]) for rep in range(eb))
             for rep, randompar, simulations in self.repeat(param_generator):
                 # Calculate fitness
-                clike = self.postprocessing(icall, randompar, simulations, chains=2, negativlike=True)
+                clike = self.postprocessing(
+                    icall, randompar, simulations, chains=2, negativlike=True)
                 if clike > work[rep][0]:
                     work[rep][1] = work[rep][3]
                     work[rep][0] = clike
@@ -224,7 +230,8 @@ class fscabc(_algorithm):
                     work[i][4] = 0
                     t, work[i][0], simulations = self.simulate(
                         (icall, work[i][1]))
-                    clike = self.postprocessing(icall, randompar, simulations, chains=3, negativlike=True)
+                    clike = self.postprocessing(
+                        icall, randompar, simulations, chains=3, negativlike=True)
                     work[i][0] = clike
                     icall += 1
                     if self.status.stop:
@@ -233,7 +240,7 @@ class fscabc(_algorithm):
             gnrng = -self.status.objectivefunction_max
 
             if self.breakpoint == 'write' or self.breakpoint == 'readandwrite'\
-                    and icall >= lastbackup+self.backup_every_rep:
+                    and icall >= lastbackup + self.backup_every_rep:
                 savework = (icall, work, gnrng, r)
                 self.write_breakdata(self.dbname, savework)
                 lastbackup = icall

@@ -17,11 +17,11 @@ import math
 class fast(_algorithm):
     '''
     Fourier Amplitude Sensitivity Test (FAST)
-    
+
     This class holds the Fourier Amplitude Sensitivity Test (FAST) based on Cukier et al. (1973) and Saltelli et al. (1999):
 
     Cukier, R. I., Fortuin, C. M., Shuler, K. E., Petschek, A. G. and Schaibly, J. H.: Study of the sensitivity of coupled reaction systems to uncertainties in rate coefficients. I Theory, J. Chem. Phys., 59(8), 3873–3878, 1973.
-    
+
     Saltelli, A., Tarantola, S. and Chan, K. P.-S.: A Quantitative Model-Independent Method for Global Sensitivity Analysis of Model Output, Technometrics, 41(1), 39–56, doi:10.1080/00401706.1999.10485594, 1999.
 
     The presented code is based on SALib
@@ -31,34 +31,34 @@ class fast(_algorithm):
     You should have received a copy of the GNU Lesser General Public License along with the Sensitivity Analysis Library. If not, see http://www.gnu.org/licenses/.
      '''
 
-    def __init__(self,  *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         '''
         Input
         ----------
         spot_setup: class
-            model: function 
-                Should be callable with a parameter combination of the parameter-function 
+            model: function
+                Should be callable with a parameter combination of the parameter-function
                 and return an list of simulation results (as long as evaluation list)
             parameter: function
-                When called, it should return a random parameter combination. Which can 
+                When called, it should return a random parameter combination. Which can
                 be e.g. uniform or Gaussian
-            objectivefunction: function 
-                Should return the objectivefunction for a given list of a model simulation and 
+            objectivefunction: function
+                Should return the objectivefunction for a given list of a model simulation and
                 observation.
             evaluation: function
                 Should return the true values as return by the model.
-    
+
         dbname: str
             * Name of the database where parameter, objectivefunction value and simulation results will be saved.
-    
+
         dbformat: str
             * ram: fast suited for short sampling time. no file will be created and results are saved in an array.
-            * csv: A csv file will be created, which you can import afterwards.        
-    
+            * csv: A csv file will be created, which you can import afterwards.
+
         parallel: str
             * seq: Sequentiel sampling (default): Normal iterations on one core of your cpu.
             * mpi: Message Passing Interface: Parallel computing on cluster pcs (recommended for unix os).
-    
+
         save_sim: boolean
             *True:  Simulation results will be saved
             *False: Simulation results will not be saved
@@ -140,14 +140,14 @@ class fast(_algorithm):
             N = int(Y.size / D)
         elif Y.size > D:
             N = int(Y.size / D)
-            rest = Y.size - N*D
+            rest = Y.size - N * D
             print("""
                 We can not use """ + str(rest) + """ samples which was generated
-                of totaly """ + str(Y.size) + """ 
+                of totaly """ + str(Y.size) + """
                 """)
         else:
             print("""
-                Error: Number of samples in model output file must be a multiple of D, 
+                Error: Number of samples in model output file must be a multiple of D,
                 where D is the number of parameters in your parameter file.
               """)
             exit()
@@ -195,11 +195,14 @@ class fast(_algorithm):
 
         Input
         ----------
-        repetitions: int 
-            Maximum number of runs.  
+        repetitions: int
+            Maximum number of runs.
         """
         self.set_repetiton(repetitions)
-        print('Starting the FAST algotrithm with '+str(repetitions)+ ' repetitions...')
+        print(
+            'Starting the FAST algotrithm with ' +
+            str(repetitions) +
+            ' repetitions...')
         print('Creating FAST Matrix')
         # Get the names of the parameters to analyse
         names = self.parameter()['name']
@@ -214,7 +217,7 @@ class fast(_algorithm):
         for i in range(len(parmin)):
             bounds.append([parmin[i], parmax[i]])
         Matrix = self.matrix(bounds, N, M=M)
-        lastbackup=0
+        lastbackup = 0
         if self.breakpoint == 'read' or self.breakpoint == 'readandwrite':
             data_frombreak = self.read_breakdata(self.dbname)
             rep = data_frombreak[0]
@@ -227,13 +230,13 @@ class fast(_algorithm):
             self.postprocessing(rep, randompar, simulations)
 
             if self.breakpoint == 'write' or self.breakpoint == 'readandwrite':
-                if rep >= lastbackup+self.backup_every_rep:
+                if rep >= lastbackup + self.backup_every_rep:
                     work = (rep, Matrix[rep:])
                     self.write_breakdata(self.dbname, work)
                     lastbackup = rep
         self.final_call()
-        
-        try:            
+
+        try:
             data = self.datawriter.getdata()
             # this is likely to crash if database does not assign name 'like1'
             Si = self.analyze(

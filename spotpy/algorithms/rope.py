@@ -21,8 +21,7 @@ class rope(_algorithm):
     Hydrol. Earth Syst. Sci. Discuss., 5(3), 1641–1675, 2008.
     '''
 
-    def __init__(self,  *args, **kwargs):
-            
+    def __init__(self, *args, **kwargs):
         '''
         Input
         ----------
@@ -39,16 +38,16 @@ class rope(_algorithm):
                 simulation and observation.
             evaluation: function
                 Should return the true values as return by the model.
-    
+
         :param dbname: str
             * Name of the database where parameter, objectivefunction value and
             simulation results will be saved.
-    
+
         :param dbformat: str
             * ram: fast suited for short sampling time. no file will be created and
             results are saved in an array.
             * csv: A csv file will be created, which you can import afterwards.
-    
+
         :param parallel: str
             * seq: Sequentiel sampling (default): Normal iterations on one core
             of your cpu.
@@ -56,7 +55,7 @@ class rope(_algorithm):
             (recommended for windows os).
             * mpi: Message Passing Interface: Parallel computing on cluster pcs
             (recommended for unix os).
-    
+
         :param save_sim: boolean
             *True:  Simulation results will be saved
             *False: Simulation results will not be saved
@@ -68,7 +67,8 @@ class rope(_algorithm):
     def get_best_runs(self, likes, pars, runs, percentage):
         '''
         Returns the best xx% of the runs'''
-        return [new_pars for (new_likes, new_pars) in sorted(zip(likes, pars))[int(len(likes) * (1 - percentage)):]]
+        return [new_pars for (new_likes, new_pars) in sorted(
+            zip(likes, pars))[int(len(likes) * (1 - percentage)):]]
 
     def sample(self, repetitions=None, repetitions_first_run=None,
                subsets=5, percentage_first_run=0.10,
@@ -90,39 +90,42 @@ class rope(_algorithm):
         next step after in all following subsets
         NDIR = The number of samples to draw
         """
-        #Reported behaviour:
+        # Reported behaviour:
         # Takes ways´to long for npar >8
         # wenn mehr parameter produziert werden sollen als reingehen, rechnet er sich tot (ngen>n)
-        #Subsets < 5 führt manchmal zu Absturz
-        print('Starting the ROPE algotrithm with '+str(repetitions)+ ' repetitions...')
+        # Subsets < 5 führt manchmal zu Absturz
+        print(
+            'Starting the ROPE algotrithm with ' +
+            str(repetitions) +
+            ' repetitions...')
         self.set_repetiton(repetitions)
 
         if repetitions_first_run is None:
-            #Take the first have of the repetitions as burn-in
+            # Take the first have of the repetitions as burn-in
             first_run = int(repetitions / 2.0)
 
         else:
-            #Make user defined number of burn-in repetitions
+            # Make user defined number of burn-in repetitions
             first_run = repetitions_first_run
 
-        repetitions_following_runs = int((repetitions-first_run) 
-                                          / (subsets-1))
-        # Needed to avoid an error in integer division somewhere in depth function
+        repetitions_following_runs = int((repetitions - first_run)
+                                         / (subsets - 1))
+        # Needed to avoid an error in integer division somewhere in depth
+        # function
         if repetitions_following_runs % 2 != 0:
             print('Warning: Burn-in samples and total number of repetions are not compatible.\n'
                   'SPOTPY will automatically adjust the number of total repetitions.')
-            repetitions_following_runs+=1
+            repetitions_following_runs += 1
 
-            
         if NDIR is None:
             NDIR = int(repetitions_following_runs / 100.0)
         self.NDIR = NDIR
 
         starttime = time.time()
         intervaltime = starttime
-        parset =self.parameter() 
+        parset = self.parameter()
         self.min_bound, self.max_bound = parset['minbound'], parset['maxbound']
-        
+
         # Init ROPE with one subset
         likes = []
         pars = []
@@ -135,7 +138,8 @@ class rope(_algorithm):
         for i in range(int(first_run)):
             segmentMin = i * segment
             pointInSegment = segmentMin + (random.random() * segment)
-            parset = pointInSegment * (self.max_bound - self.min_bound) + self.min_bound
+            parset = pointInSegment * \
+                (self.max_bound - self.min_bound) + self.min_bound
             matrix[i] = parset
         for i in range(len(self.min_bound)):
             random.shuffle(matrix[:, i])
@@ -144,7 +148,8 @@ class rope(_algorithm):
         param_generator = ((rep, matrix[rep])
                            for rep in range(int(first_run) - 1))
         for rep, randompar, simulations in self.repeat(param_generator):
-            # A function that calculates the fitness of the run and the manages the database 
+            # A function that calculates the fitness of the run and the manages
+            # the database
             like = self.postprocessing(rep, randompar, simulations)
             likes.append(like)
             pars.append(randompar)
@@ -161,15 +166,16 @@ class rope(_algorithm):
 
         for subset in range(subsets - 1):
             if subset == 0:
-                best_pars = self.get_best_runs(likes, pars, repetitions_following_runs, 
+                best_pars = self.get_best_runs(likes, pars, repetitions_following_runs,
                                                percentage_first_run)
             else:
                 best_pars = self.get_best_runs(likes, pars, repetitions_following_runs,
                                                percentage_following_runs)
             valid = False
             trials = 0
-            while valid is False and trials < 10 and repetitions_following_runs>1: 
-                new_pars = self.programm_depth(best_pars, repetitions_following_runs)
+            while valid is False and trials < 10 and repetitions_following_runs > 1:
+                new_pars = self.programm_depth(
+                    best_pars, repetitions_following_runs)
                 if len(new_pars) == repetitions_following_runs:
                     valid = True
                 else:
@@ -179,10 +185,16 @@ class rope(_algorithm):
             if(int(repetitions_following_runs) > len(new_pars)):
                 repetitions_following_runs = len(new_pars)
             param_generator = (
-                (rep, new_pars[rep]) for rep in range(int(repetitions_following_runs)))   
+                (rep, new_pars[rep]) for rep in range(int(repetitions_following_runs)))
             for rep, ropepar, simulations in self.repeat(param_generator):
                 # Calculate the objective function
-                like = self.postprocessing(first_run + rep + repetitions_following_runs * subset, ropepar, simulations)
+                like = self.postprocessing(
+                    first_run +
+                    rep +
+                    repetitions_following_runs *
+                    subset,
+                    ropepar,
+                    simulations)
                 likes.append(like)
                 pars.append(ropepar)
                 if self.status.stop:
@@ -205,7 +217,6 @@ class rope(_algorithm):
                 break
 
         self.final_call()
-        
 
     def programm_depth(self, pars, runs):
         X = np.array(pars)
@@ -325,7 +336,7 @@ class rope(_algorithm):
                     NT = 0
                     EKT = EKT + np.dot(TL[LU, :], EVECT)
                     if ((EKT < (HELP[0] - EPS)) or (
-                                EKT > (HELP[N - 1] + EPS))):
+                            EKT > (HELP[N - 1] + EPS))):
                         N1 = 0
                     else:
                         N1 = 1

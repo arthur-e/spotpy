@@ -13,6 +13,7 @@ from . import _algorithm
 import numpy as np
 import random
 
+
 class lhs(_algorithm):
     """
     The Latin Hypercube algorithm generates random parameters from their respective
@@ -62,7 +63,10 @@ class lhs(_algorithm):
             maximum number of function evaluations allowed during optimization
         """
         self.set_repetiton(repetitions)
-        print('Starting the LHS algotrithm with '+str(repetitions)+ ' repetitions...')
+        print(
+            'Starting the LHS algotrithm with ' +
+            str(repetitions) +
+            ' repetitions...')
         print('Creating LatinHyperCube Matrix')
         # Get the names of the parameters to analyse
         names = self.parameter()['name']
@@ -88,6 +92,7 @@ class lhs(_algorithm):
         param_generator = ((rep, matrix[rep])
                            for rep in range(int(repetitions)))
         for rep, randompar, simulations in self.repeat(param_generator):
-            # A function that calculates the fitness of the run and the manages the database 
+            # A function that calculates the fitness of the run and the manages
+            # the database
             self.postprocessing(rep, randompar, simulations)
         self.final_call()
